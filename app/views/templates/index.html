@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>MidiaHub</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-slate-800">
+        MidiaHub
+      </h1>
+
+      <nav class="flex items-center gap-4">
+        <a href="/" class="text-slate-700 hover:text-blue-600 font-medium">
+          Início
+        </a>
+
+        <a href="/login" class="text-slate-700 hover:text-blue-600 font-medium">
+          Login
+        </a>
+
+        <a href="/cadastro" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          Cadastrar
+        </a>
+      </nav>
+    </div>
+  </header>
+
+
+  <!-- Conteúdo principal -->
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Título da página -->
+    <section class="mb-8">
+      <h2 class="text-3xl font-bold text-slate-800">
+        Publicações recentes
+      </h2>
+
+      <p class="text-slate-600 mt-2">
+        Veja fotos e vídeos publicados pelos usuários.
+      </p>
+    </section>
+
+
+    <!-- Lista de publicações -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      {% for post in posts %}
+
+        <article class="bg-white rounded-xl shadow-sm overflow-hidden">
+
+          <!-- Mídia da publicação -->
+          <div class="bg-slate-200 h-64 flex items-center justify-center">
+
+            {% if post.tipo == "imagem" %}
+              <img
+                src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
+                alt="{{ post.titulo }}"
+                class="w-full h-full object-cover"
+              >
+            {% elif post.tipo == "video" %}
+              <video
+                controls
+                class="w-full h-full object-cover"
+              >
+                <source src="{{ url_for('static', filename='uploads/videos/' + post.arquivo) }}" type="video/mp4">
+                Seu navegador não suporta vídeos.
+              </video>
+            {% else %}
+              <p class="text-slate-500">
+                Mídia não encontrada
+              </p>
+            {% endif %}
+
+          </div>
+
+
+          <!-- Informações do post -->
+          <div class="p-5">
+
+            <p class="text-sm text-slate-500 mb-1">
+              Publicado por {{ post.usuario }}
+            </p>
+
+            <h3 class="text-xl font-semibold text-slate-800">
+              {{ post.titulo }}
+            </h3>
+
+            <p class="text-slate-600 mt-2">
+              {{ post.descricao }}
+            </p>
+
+
+            <!-- Área de like -->
+            <div class="mt-4 flex items-center justify-between">
+
+              <form action="/post/{{ post.id }}/like" method="POST">
+                <button
+                  type="submit"
+                  class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg"
+                >
+                  👍 Curtir
+                </button>
+              </form>
+
+              <span class="text-slate-600 font-medium">
+                {{ post.likes }} likes
+              </span>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      {% endfor %}
+
+    </section>
+
+
+    <!-- Caso não tenha posts -->
+    {% if posts|length == 0 %}
+      <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <p class="text-slate-600">
+          Nenhuma publicação encontrada.
+        </p>
+      </div>
+    {% endif %}
+
+  </main>
+
+</body>
+</html>
