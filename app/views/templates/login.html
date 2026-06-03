@@ -27,12 +27,14 @@
         <div class="mb-4 space-y-2">
           {% for category, message in messages %}
             {% if category == "sucesso" %}
-              <div class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm">
-                {{ message }}
+              <div data-alert class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-green-900">x</button>
               </div>
             {% else %}
-              <div class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {{ message }}
+              <div data-alert class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-red-900">x</button>
               </div>
             {% endif %}
           {% endfor %}
@@ -42,6 +44,7 @@
 
 
     <form action="/login" method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div>
         <label for="email" class="block text-sm font-medium text-slate-700 mb-1">
@@ -91,6 +94,7 @@
     </p>
 
   </main>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
 </body>
 </html>

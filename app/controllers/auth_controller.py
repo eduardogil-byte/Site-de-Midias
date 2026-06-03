@@ -1,72 +1,102 @@
-from flask import render_template, request, redirect, url_for, flash
-from flask_jwt_extended import create_access_token
+from flask import flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from app.database import db
+from app.models.post import Post
+from app.models.user import User
+from app.security import csrf_protect
 
 
-# Lista temporária para simular usuários cadastrados
-# Depois vamos trocar isso pelo MySQL
-usuarios = []
+def limpar_texto(valor, limite):
+    valor = (valor or "").strip()
+    return valor[:limite]
 
 
+@csrf_protect
 def cadastro():
     if request.method == "GET":
         return render_template("register.html")
 
-    nome = request.form.get("nome")
-    email = request.form.get("email")
-    senha = request.form.get("senha")
+    nome = limpar_texto(request.form.get("nome"), 80)
+    email = limpar_texto(request.form.get("email"), 120).lower()
+    senha = request.form.get("senha") or ""
 
     if not nome or not email or not senha:
         flash("Preencha todos os campos.", "erro")
         return redirect(url_for("cadastro"))
 
-    for usuario in usuarios:
-        if usuario["email"] == email:
-            flash("Este e-mail já está cadastrado.", "erro")
-            return redirect(url_for("cadastro"))
+    if len(senha) < 6:
+        flash("A senha deve ter pelo menos 6 caracteres.", "erro")
+        return redirect(url_for("cadastro"))
 
-    novo_usuario = {
-        "id": len(usuarios) + 1,
-        "nome": nome,
-        "email": email,
-        "senha": senha
-    }
+    usuario_existente = User.query.filter_by(email=email).first()
 
-    usuarios.append(novo_usuario)
+    if usuario_existente:
+        flash("Este e-mail ja esta cadastrado.", "erro")
+        return redirect(url_for("cadastro"))
 
-    flash("Cadastro realizado com sucesso! Faça login.", "sucesso")
+    novo_usuario = User(
+        nome=nome,
+        email=email,
+        senha_hash=generate_password_hash(senha),
+    )
+
+    db.session.add(novo_usuario)
+    db.session.commit()
+
     return redirect(url_for("login"))
 
 
+@csrf_protect
 def login():
     if request.method == "GET":
         return render_template("login.html")
 
-    email = request.form.get("email")
-    senha = request.form.get("senha")
+    email = limpar_texto(request.form.get("email"), 120).lower()
+    senha = request.form.get("senha") or ""
 
     if not email or not senha:
         flash("Preencha e-mail e senha.", "erro")
         return redirect(url_for("login"))
 
-    usuario_encontrado = None
+    usuario_encontrado = User.query.filter_by(email=email).first()
 
-    for usuario in usuarios:
-        if usuario["email"] == email and usuario["senha"] == senha:
-            usuario_encontrado = usuario
-            break
-
-    if usuario_encontrado is None:
-        flash("E-mail ou senha inválidos.", "erro")
+    if usuario_encontrado is None or not check_password_hash(
+        usuario_encontrado.senha_hash,
+        senha,
+    ):
+        flash("E-mail ou senha invalidos.", "erro")
         return redirect(url_for("login"))
 
-    access_token = create_access_token(
-        identity=str(usuario_encontrado["id"])
-    )
+    session["usuario_id"] = usuario_encontrado.id
 
-    flash("Login realizado com sucesso!", "sucesso")
+    return redirect(url_for("home"))
+
+
+def perfil():
+    usuario_id = session.get("usuario_id")
+
+    if not usuario_id:
+        flash("Faca login para acessar seu perfil.", "erro")
+        return redirect(url_for("login"))
+
+    usuario = db.session.get(User, usuario_id)
+
+    if usuario is None:
+        session.pop("usuario_id", None)
+        flash("Sessao expirada. Faca login novamente.", "erro")
+        return redirect(url_for("login"))
+
+    posts = Post.query.filter_by(usuario_id=usuario.id).order_by(Post.criado_em.desc()).all()
 
     return render_template(
         "perfil.html",
-        usuario=usuario_encontrado,
-        token=access_token
+        usuario=usuario.to_dict(),
+        posts=posts,
     )
+
+
+@csrf_protect
+def logout():
+    session.pop("usuario_id", None)
+    return redirect(url_for("home"))

@@ -2,142 +2,153 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>MidiaHub</title>
-
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-slate-100 min-h-screen">
-
-  <!-- Header -->
   <header class="bg-white shadow-sm">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-slate-800">
+      <a href="/" class="text-2xl font-bold text-slate-800">
         MidiaHub
-      </h1>
+      </a>
 
       <nav class="flex items-center gap-4">
         <a href="/" class="text-slate-700 hover:text-blue-600 font-medium">
-          Início
+          Inicio
         </a>
 
-        <a href="/login" class="text-slate-700 hover:text-blue-600 font-medium">
-          Login
-        </a>
+        {% if usuario %}
+          <a href="/perfil" class="text-slate-700 hover:text-blue-600 font-medium">
+            Perfil
+          </a>
 
-        <a href="/cadastro" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          Cadastrar
-        </a>
+          <a href="/publicar" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            Publicar
+          </a>
+
+          <form action="/logout" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-slate-700 hover:text-red-600 font-medium">
+              Sair
+            </button>
+          </form>
+        {% else %}
+          <a href="/login" class="text-slate-700 hover:text-blue-600 font-medium">
+            Login
+          </a>
+
+          <a href="/cadastro" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            Cadastrar
+          </a>
+        {% endif %}
       </nav>
     </div>
   </header>
 
-
-  <!-- Conteúdo principal -->
   <main class="max-w-5xl mx-auto px-4 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            {% if category == "sucesso" %}
+              <div data-alert class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-green-900">x</button>
+              </div>
+            {% else %}
+              <div data-alert class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-red-900">x</button>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-    <!-- Título da página -->
     <section class="mb-8">
       <h2 class="text-3xl font-bold text-slate-800">
-        Publicações recentes
+        Publicacoes recentes
       </h2>
 
       <p class="text-slate-600 mt-2">
-        Veja fotos e vídeos publicados pelos usuários.
+        Veja fotos e videos publicados pelos usuarios.
       </p>
     </section>
 
-
-    <!-- Lista de publicações -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
       {% for post in posts %}
-
         <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-
-          <!-- Mídia da publicação -->
           <div class="bg-slate-200 h-64 flex items-center justify-center">
-
             {% if post.tipo == "imagem" %}
-              <img
-                src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
-                alt="{{ post.titulo }}"
-                class="w-full h-full object-cover"
-              >
+              {% if post.arquivo[-4:]|lower == ".gif" %}
+                <img
+                  src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+                  data-gif-src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
+                  alt="{{ post.titulo }}"
+                  class="w-full h-full object-cover"
+                >
+              {% else %}
+                <img
+                  src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
+                  alt="{{ post.titulo }}"
+                  loading="lazy"
+                  class="w-full h-full object-cover"
+                >
+              {% endif %}
             {% elif post.tipo == "video" %}
-              <video
-                controls
-                class="w-full h-full object-cover"
-              >
+              <video controls muted loop playsinline preload="metadata" data-watch-video class="w-full h-full object-cover">
                 <source src="{{ url_for('static', filename='uploads/videos/' + post.arquivo) }}" type="video/mp4">
-                Seu navegador não suporta vídeos.
+                Seu navegador nao suporta videos.
               </video>
             {% else %}
               <p class="text-slate-500">
-                Mídia não encontrada
+                Midia nao encontrada
               </p>
             {% endif %}
-
           </div>
 
-
-          <!-- Informações do post -->
-          <div class="p-5">
-
-            <p class="text-sm text-slate-500 mb-1">
-              Publicado por {{ post.usuario }}
+          <div class="p-5 min-w-0">
+            <p class="text-sm text-slate-500 mb-1 break-words">
+              Publicado por {{ post.usuario_nome }}
             </p>
 
-            <h3 class="text-xl font-semibold text-slate-800">
+            <h3 class="text-xl font-semibold text-slate-800 break-words">
               {{ post.titulo }}
             </h3>
 
-            <p class="text-slate-600 mt-2">
-              {{ post.descricao }}
-            </p>
+            <p class="text-slate-600 mt-2 whitespace-pre-line break-words [overflow-wrap:anywhere] overflow-hidden" data-description data-limit="160">{{ post.descricao }}</p>
 
-
-            <!-- Área de like -->
             <div class="mt-4 flex items-center justify-between">
-
-              <form action="/post/{{ post.id }}/like" method="POST">
+              <form action="/post/{{ post.id }}/like" method="POST" data-like-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button
                   type="submit"
                   class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg"
                 >
-                  👍 Curtir
+                  Curtir
                 </button>
               </form>
 
-              <span class="text-slate-600 font-medium">
-                {{ post.likes }} likes
+              <span class="text-slate-600 font-medium" data-like-count>
+                {{ post.total_likes }} likes
               </span>
-
             </div>
-
           </div>
-
         </article>
-
       {% endfor %}
-
     </section>
 
-
-    <!-- Caso não tenha posts -->
     {% if posts|length == 0 %}
       <div class="bg-white rounded-xl shadow-sm p-8 text-center">
         <p class="text-slate-600">
-          Nenhuma publicação encontrada.
+          Nenhuma publicacao encontrada.
         </p>
       </div>
     {% endif %}
-
   </main>
-
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

@@ -2,51 +2,48 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Perfil - MidiaHub</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-slate-100 min-h-screen">
-
-  <!-- Header -->
   <header class="bg-white shadow-sm">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-
-      <h1 class="text-2xl font-bold text-slate-800">
+      <a href="/" class="text-2xl font-bold text-slate-800">
         MidiaHub
-      </h1>
+      </a>
 
       <nav class="flex items-center gap-4">
         <a href="/" class="text-slate-700 hover:text-blue-600 font-medium">
-          Início
+          Inicio
         </a>
 
         <a href="/publicar" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           Publicar
         </a>
-      </nav>
 
+        <form action="/logout" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="text-slate-700 hover:text-red-600 font-medium">
+            Sair
+          </button>
+        </form>
+      </nav>
     </div>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
-
     <section class="bg-white rounded-2xl shadow-sm p-8 mb-6">
-
       <h2 class="text-3xl font-bold text-slate-800 mb-2">
         Bem-vindo, {{ usuario.nome }}!
       </h2>
 
       <p class="text-slate-600">
-        Você está logado no MidiaHub.
+        Aqui voce pode ver seus dados e suas publicacoes.
       </p>
 
       <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-
         <div class="bg-slate-100 rounded-xl p-4">
           <p class="text-sm text-slate-500">
             Nome
@@ -66,34 +63,72 @@
             {{ usuario.email }}
           </p>
         </div>
-
       </div>
-
     </section>
 
-    <section class="bg-white rounded-2xl shadow-sm p-8">
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold text-slate-800">
+          Meus posts
+        </h3>
 
-      <h3 class="text-2xl font-bold text-slate-800 mb-2">
-        Token JWT gerado
-      </h3>
-
-      <p class="text-slate-600 mb-4">
-        Esse token representa a autenticação do usuário após o login.
-      </p>
-
-      <div class="bg-slate-900 text-green-400 rounded-xl p-4 overflow-x-auto">
-        <code class="text-sm break-all">
-          {{ token }}
-        </code>
+        <a href="/publicar" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          Novo post
+        </a>
       </div>
 
-      <p class="text-sm text-slate-500 mt-4">
-        Mais tarde, esse token será usado para acessar áreas protegidas do sistema.
-      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for post in posts %}
+          <article class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="bg-slate-200 h-64 flex items-center justify-center">
+              {% if post.tipo == "imagem" %}
+                {% if post.arquivo[-4:]|lower == ".gif" %}
+                  <img
+                    src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+                    data-gif-src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
+                    alt="{{ post.titulo }}"
+                    class="w-full h-full object-cover"
+                  >
+                {% else %}
+                  <img
+                    src="{{ url_for('static', filename='uploads/images/' + post.arquivo) }}"
+                    alt="{{ post.titulo }}"
+                    loading="lazy"
+                    class="w-full h-full object-cover"
+                  >
+                {% endif %}
+              {% elif post.tipo == "video" %}
+                <video controls muted loop playsinline preload="metadata" data-watch-video class="w-full h-full object-cover">
+                  <source src="{{ url_for('static', filename='uploads/videos/' + post.arquivo) }}" type="video/mp4">
+                  Seu navegador nao suporta videos.
+                </video>
+              {% endif %}
+            </div>
 
+            <div class="p-5 min-w-0">
+              <h4 class="text-xl font-semibold text-slate-800 break-words">
+                {{ post.titulo }}
+              </h4>
+
+              <p class="text-slate-600 mt-2 whitespace-pre-line break-words [overflow-wrap:anywhere] overflow-hidden" data-description data-limit="160">{{ post.descricao }}</p>
+
+              <p class="text-slate-500 font-medium mt-4">
+                {{ post.total_likes }} likes
+              </p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% if posts|length == 0 %}
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+          <p class="text-slate-600">
+            Voce ainda nao publicou nenhum post.
+          </p>
+        </div>
+      {% endif %}
     </section>
-
   </main>
-
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
