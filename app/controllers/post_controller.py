@@ -108,8 +108,8 @@ def publicar():
     descricao = limpar_texto(request.form.get("descricao"), 1000)
     arquivo = request.files.get("arquivo")
 
-    if not titulo or not descricao or not arquivo:
-        flash("Preencha todos os campos e selecione um arquivo.", "erro")
+    if not titulo or not arquivo:
+        flash("Preencha o titulo e selecione um arquivo.", "erro")
         return redirect(url_for("publicar"))
 
     if arquivo.filename == "":
