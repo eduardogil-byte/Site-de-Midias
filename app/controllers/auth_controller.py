@@ -44,6 +44,7 @@ def cadastro():
     db.session.add(novo_usuario)
     db.session.commit()
 
+    flash("Cadastro realizado com sucesso. Faca login para continuar.", "sucesso")
     return redirect(url_for("login"))
 
 
@@ -97,6 +98,52 @@ def perfil():
 
 
 @csrf_protect
+def alterar_senha():
+    usuario_id = session.get("usuario_id")
+
+    if not usuario_id:
+        flash("Faca login para alterar sua senha.", "erro")
+        return redirect(url_for("login"))
+
+    usuario = db.session.get(User, usuario_id)
+
+    if usuario is None:
+        session.pop("usuario_id", None)
+        flash("Sessao expirada. Faca login novamente.", "erro")
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template("alterar_senha.html")
+
+    senha_atual = request.form.get("senha_atual") or ""
+    nova_senha = request.form.get("nova_senha") or ""
+    confirmar_senha = request.form.get("confirmar_senha") or ""
+
+    if not senha_atual or not nova_senha or not confirmar_senha:
+        flash("Preencha todos os campos.", "erro")
+        return redirect(url_for("alterar_senha"))
+
+    if not check_password_hash(usuario.senha_hash, senha_atual):
+        flash("Senha atual incorreta.", "erro")
+        return redirect(url_for("alterar_senha"))
+
+    if len(nova_senha) < 6:
+        flash("A nova senha deve ter pelo menos 6 caracteres.", "erro")
+        return redirect(url_for("alterar_senha"))
+
+    if nova_senha != confirmar_senha:
+        flash("A confirmacao da senha nao confere.", "erro")
+        return redirect(url_for("alterar_senha"))
+
+    usuario.senha_hash = generate_password_hash(nova_senha)
+    db.session.commit()
+
+    flash("Senha alterada com sucesso.", "sucesso")
+    return redirect(url_for("perfil"))
+
+
+@csrf_protect
 def logout():
     session.pop("usuario_id", None)
+    flash("Logout realizado com sucesso.", "sucesso")
     return redirect(url_for("home"))

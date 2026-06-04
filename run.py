@@ -96,6 +96,13 @@ app.add_url_rule(
 )
 
 app.add_url_rule(
+    "/alterar-senha",
+    "alterar_senha",
+    auth_controller.alterar_senha,
+    methods=["GET", "POST"]
+)
+
+app.add_url_rule(
     "/logout",
     "logout",
     auth_controller.logout,

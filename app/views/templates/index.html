@@ -7,39 +7,39 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-slate-100 min-h-screen">
-  <header class="bg-white shadow-sm">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/" class="text-2xl font-bold text-slate-800">
+<body class="bg-slate-50 min-h-screen text-slate-800">
+  <header class="sticky top-0 z-20 bg-white/95 border-b border-slate-200 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <a href="/" class="text-2xl font-bold tracking-normal text-slate-900">
         MidiaHub
       </a>
 
-      <nav class="flex items-center gap-4">
-        <a href="/" class="text-slate-700 hover:text-blue-600 font-medium">
+      <nav class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <a href="/" class="text-slate-700 hover:text-blue-600 font-medium px-3 py-2 rounded-lg hover:bg-slate-100">
           Inicio
         </a>
 
         {% if usuario %}
-          <a href="/perfil" class="text-slate-700 hover:text-blue-600 font-medium">
+          <a href="/perfil" class="text-slate-700 hover:text-blue-600 font-medium px-3 py-2 rounded-lg hover:bg-slate-100">
             Perfil
           </a>
 
-          <a href="/publicar" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <a href="/publicar" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-sm">
             Publicar
           </a>
 
           <form action="/logout" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="text-slate-700 hover:text-red-600 font-medium">
+            <button type="submit" class="text-slate-700 hover:text-red-600 font-medium px-3 py-2 rounded-lg hover:bg-red-50">
               Sair
             </button>
           </form>
         {% else %}
-          <a href="/login" class="text-slate-700 hover:text-blue-600 font-medium">
+          <a href="/login" class="text-slate-700 hover:text-blue-600 font-medium px-3 py-2 rounded-lg hover:bg-slate-100">
             Login
           </a>
 
-          <a href="/cadastro" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <a href="/cadastro" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-sm">
             Cadastrar
           </a>
         {% endif %}
@@ -47,18 +47,18 @@
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-8">
+  <main class="max-w-6xl mx-auto px-4 py-8">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="mb-6 space-y-2">
           {% for category, message in messages %}
             {% if category == "sucesso" %}
-              <div data-alert class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+              <div data-alert class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
                 <span>{{ message }}</span>
                 <button type="button" data-alert-close class="font-bold leading-none hover:text-green-900">x</button>
               </div>
             {% else %}
-              <div data-alert class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+              <div data-alert class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
                 <span>{{ message }}</span>
                 <button type="button" data-alert-close class="font-bold leading-none hover:text-red-900">x</button>
               </div>
@@ -68,20 +68,28 @@
       {% endif %}
     {% endwith %}
 
-    <section class="mb-8">
-      <h2 class="text-3xl font-bold text-slate-800">
-        Publicacoes recentes
-      </h2>
+    <section class="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-900">
+          Publicacoes recentes
+        </h2>
 
-      <p class="text-slate-600 mt-2">
-        Veja fotos e videos publicados pelos usuarios.
-      </p>
+        <p class="text-slate-600 mt-2">
+          Veja fotos e videos publicados pelos usuarios.
+        </p>
+      </div>
+
+      {% if usuario %}
+        <a href="/publicar" class="inline-flex items-center justify-center bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-700 shadow-sm">
+          Nova publicacao
+        </a>
+      {% endif %}
     </section>
 
     <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
       {% for post in posts %}
-        <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div class="bg-slate-200 h-64 flex items-center justify-center">
+        <article class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
+          <div class="bg-slate-200 aspect-video flex items-center justify-center overflow-hidden">
             {% if post.tipo == "imagem" %}
               {% if post.arquivo[-4:]|lower == ".gif" %}
                 <img
@@ -111,28 +119,39 @@
           </div>
 
           <div class="p-5 min-w-0">
-            <p class="text-sm text-slate-500 mb-1 break-words">
+            <p class="text-sm text-slate-500 mb-2 break-words">
               Publicado por {{ post.usuario_nome }}
             </p>
 
-            <h3 class="text-xl font-semibold text-slate-800 break-words">
+            <h3 class="text-xl font-semibold text-slate-900 break-words">
               {{ post.titulo }}
             </h3>
 
-            <p class="text-slate-600 mt-2 whitespace-pre-line break-words [overflow-wrap:anywhere] overflow-hidden" data-description data-limit="160">{{ post.descricao }}</p>
+            <p class="text-slate-600 mt-3 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere] overflow-hidden" data-description data-limit="160">{{ post.descricao }}</p>
 
-            <div class="mt-4 flex items-center justify-between">
-              <form action="/post/{{ post.id }}/like" method="POST" data-like-form>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button
-                  type="submit"
-                  class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg"
+            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+              {% if usuario %}
+                <form action="/post/{{ post.id }}/like" method="POST" data-like-form>
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  {% set curtido = post.id in posts_curtidos %}
+                  <button
+                    type="submit"
+                    data-liked="{{ 'true' if curtido else 'false' }}"
+                    class="min-w-24 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition {% if curtido %}bg-blue-600 text-white hover:bg-blue-700 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}"
+                  >
+                    {{ "Curtido" if curtido else "Curtir" }}
+                  </button>
+                </form>
+              {% else %}
+                <a
+                  href="/login"
+                  class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition"
                 >
-                  Curtir
-                </button>
-              </form>
+                  Entrar para curtir
+                </a>
+              {% endif %}
 
-              <span class="text-slate-600 font-medium" data-like-count>
+              <span class="bg-slate-50 border border-slate-200 text-slate-600 font-medium px-3 py-1.5 rounded-lg" data-like-count>
                 {{ post.total_likes }} likes
               </span>
             </div>
@@ -142,10 +161,20 @@
     </section>
 
     {% if posts|length == 0 %}
-      <div class="bg-white rounded-xl shadow-sm p-8 text-center">
-        <p class="text-slate-600">
+      <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-10 text-center">
+        <h3 class="text-xl font-semibold text-slate-900">
+          Nenhuma publicacao ainda
+        </h3>
+
+        <p class="text-slate-600 mt-2">
           Nenhuma publicacao encontrada.
         </p>
+
+        {% if usuario %}
+          <a href="/publicar" class="inline-flex items-center justify-center mt-5 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 shadow-sm">
+            Criar primeira publicacao
+          </a>
+        {% endif %}
       </div>
     {% endif %}
   </main>

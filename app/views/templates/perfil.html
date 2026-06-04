@@ -23,6 +23,10 @@
           Publicar
         </a>
 
+        <a href="/alterar-senha" class="text-slate-700 hover:text-blue-600 font-medium">
+          Senha
+        </a>
+
         <form action="/logout" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="text-slate-700 hover:text-red-600 font-medium">
@@ -34,6 +38,26 @@
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            {% if category == "sucesso" %}
+              <div data-alert class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-green-900">x</button>
+              </div>
+            {% else %}
+              <div data-alert class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                <span>{{ message }}</span>
+                <button type="button" data-alert-close class="font-bold leading-none hover:text-red-900">x</button>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <section class="bg-white rounded-2xl shadow-sm p-8 mb-6">
       <h2 class="text-3xl font-bold text-slate-800 mb-2">
         Bem-vindo, {{ usuario.nome }}!

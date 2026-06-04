@@ -54,6 +54,19 @@ function textoLikes(total) {
   return `${total} ${total === 1 ? "like" : "likes"}`;
 }
 
+function aplicarEstadoCurtida(botao, curtido) {
+  botao.dataset.liked = curtido ? "true" : "false";
+  botao.textContent = curtido ? "Curtido" : "Curtir";
+
+  botao.classList.toggle("bg-blue-600", curtido);
+  botao.classList.toggle("text-white", curtido);
+  botao.classList.toggle("hover:bg-blue-700", curtido);
+  botao.classList.toggle("shadow-sm", curtido);
+  botao.classList.toggle("bg-slate-100", !curtido);
+  botao.classList.toggle("text-slate-700", !curtido);
+  botao.classList.toggle("hover:bg-slate-200", !curtido);
+}
+
 function prepararCurtidas() {
   document.querySelectorAll("[data-like-form]").forEach((formulario) => {
     formulario.addEventListener("submit", async (evento) => {
@@ -83,8 +96,13 @@ function prepararCurtidas() {
           contador.textContent = textoLikes(dados.likes);
         }
 
-        if (resposta.status === 409 && botao) {
-          botao.textContent = "Curtido";
+        if (resposta.status === 401 && dados.redirect) {
+          window.location.href = dados.redirect;
+          return;
+        }
+
+        if (resposta.ok && botao && typeof dados.liked === "boolean") {
+          aplicarEstadoCurtida(botao, dados.liked);
         }
       } catch (erro) {
         formulario.submit();

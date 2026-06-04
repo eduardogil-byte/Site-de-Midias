@@ -2,6 +2,7 @@ import os
 import secrets
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from app.database import db
@@ -81,6 +82,10 @@ def quer_resposta_json():
     )
 
 
+def total_likes_post(post_id):
+    return Like.query.filter_by(post_id=post_id).count()
+
+
 @csrf_protect
 def publicar():
     usuario_id = session.get("usuario_id")
@@ -147,6 +152,7 @@ def publicar():
     db.session.add(novo_post)
     db.session.commit()
 
+    flash("Publicacao criada com sucesso.", "sucesso")
     return redirect(url_for("home"))
 
 
@@ -161,6 +167,40 @@ def like_post(post_id):
         flash("Publicacao nao encontrada.", "erro")
         return redirect(url_for("home"))
 
+    usuario_id = session.get("usuario_id")
+
+    if not usuario_id:
+        if quer_resposta_json():
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "Faca login para curtir publicacoes.",
+                    "redirect": url_for("login"),
+                    "likes": post.total_likes,
+                }
+            ), 401
+
+        flash("Faca login para curtir publicacoes.", "erro")
+        return redirect(url_for("login"))
+
+    usuario = db.session.get(User, usuario_id)
+
+    if usuario is None:
+        session.pop("usuario_id", None)
+
+        if quer_resposta_json():
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "Sessao expirada. Faca login novamente.",
+                    "redirect": url_for("login"),
+                    "likes": post.total_likes,
+                }
+            ), 401
+
+        flash("Sessao expirada. Faca login novamente.", "erro")
+        return redirect(url_for("login"))
+
     session_id = obter_identificador_like()
 
     like_existente = Like.query.filter_by(
@@ -169,22 +209,56 @@ def like_post(post_id):
     ).first()
 
     if like_existente:
+        db.session.delete(like_existente)
+        db.session.commit()
+
         if quer_resposta_json():
             return jsonify(
                 {
-                    "ok": False,
-                    "message": "Voce ja curtiu esta publicacao.",
-                    "likes": post.total_likes,
+                    "ok": True,
+                    "liked": False,
+                    "likes": total_likes_post(post.id),
                 }
-            ), 409
+            )
 
-        flash("Voce ja curtiu esta publicacao.", "erro")
+        flash("Curtida removida.", "sucesso")
         return redirect(url_for("home"))
 
     db.session.add(Like(post_id=post.id, session_id=session_id))
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        like_existente = Like.query.filter_by(
+            post_id=post.id,
+            session_id=session_id,
+        ).first()
+
+        if like_existente:
+            db.session.delete(like_existente)
+            db.session.commit()
+
+        if quer_resposta_json():
+            return jsonify(
+                {
+                    "ok": True,
+                    "liked": False,
+                    "likes": total_likes_post(post.id),
+                }
+            )
+
+        flash("Curtida removida.", "sucesso")
+        return redirect(url_for("home"))
 
     if quer_resposta_json():
-        return jsonify({"ok": True, "likes": post.total_likes})
+        return jsonify(
+            {
+                "ok": True,
+                "liked": True,
+                "likes": total_likes_post(post.id),
+            }
+        )
 
+    flash("Publicacao curtida.", "sucesso")
     return redirect(url_for("home"))

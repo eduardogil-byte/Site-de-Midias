@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alterar senha - MidiaHub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+  <header class="bg-white shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-2xl font-bold text-slate-800">
+        MidiaHub
+      </a>
+
+      <nav class="flex items-center gap-4">
+        <a href="/" class="text-slate-700 hover:text-blue-600 font-medium">
+          Inicio
+        </a>
+
+        <a href="/perfil" class="text-slate-700 hover:text-blue-600 font-medium">
+          Perfil
+        </a>
+
+        <form action="/logout" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="text-slate-700 hover:text-red-600 font-medium">
+            Sair
+          </button>
+        </form>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 py-8">
+    <section class="bg-white rounded-2xl shadow-sm p-8">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-slate-800">
+          Alterar senha
+        </h1>
+
+        <p class="text-slate-600 mt-2">
+          Atualize sua senha de acesso.
+        </p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="mb-4 space-y-2">
+            {% for category, message in messages %}
+              {% if category == "sucesso" %}
+                <div data-alert class="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                  <span>{{ message }}</span>
+                  <button type="button" data-alert-close class="font-bold leading-none hover:text-green-900">x</button>
+                </div>
+              {% else %}
+                <div data-alert class="bg-red-100 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start justify-between gap-4">
+                  <span>{{ message }}</span>
+                  <button type="button" data-alert-close class="font-bold leading-none hover:text-red-900">x</button>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form action="/alterar-senha" method="POST" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div>
+          <label for="senha_atual" class="block text-sm font-medium text-slate-700 mb-1">
+            Senha atual
+          </label>
+
+          <input
+            type="password"
+            id="senha_atual"
+            name="senha_atual"
+            class="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <div>
+          <label for="nova_senha" class="block text-sm font-medium text-slate-700 mb-1">
+            Nova senha
+          </label>
+
+          <input
+            type="password"
+            id="nova_senha"
+            name="nova_senha"
+            class="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <div>
+          <label for="confirmar_senha" class="block text-sm font-medium text-slate-700 mb-1">
+            Confirmar nova senha
+          </label>
+
+          <input
+            type="password"
+            id="confirmar_senha"
+            name="confirmar_senha"
+            class="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <div class="flex items-center justify-between pt-4">
+          <a href="/perfil" class="text-slate-600 hover:text-blue-600 font-medium">
+            Cancelar
+          </a>
+
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+          >
+            Salvar
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
