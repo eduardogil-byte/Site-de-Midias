@@ -133,6 +133,7 @@
               {% if usuario %}
                 <form action="/post/{{ post.id }}/like" method="POST" data-like-form>
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  
                   {% set curtido = post.id in posts_curtidos %}
                   <button
                     type="submit"

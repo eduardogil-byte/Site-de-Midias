@@ -39,7 +39,7 @@ def home():
     # Jinja2 renderiza as coisas da tela do usuário
     return render_template(
         "index.html",
-        posts=posts,              # todos os posts que serão exibidos no feed
-        usuario=usuario,            # dados do usuário logado (se for None, mostra o botão de Login)
+        posts=posts,                   # todos os posts que serão exibidos no feed
+        usuario=usuario,               # dados do usuário logado (se for None, mostra o botão de Login)
         posts_curtidos=posts_curtidos, # conjunto de IDs para o HTML saber quais botões de curtir devem estar ativos
     )

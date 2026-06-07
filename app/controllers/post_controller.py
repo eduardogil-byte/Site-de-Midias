@@ -5,14 +5,19 @@ from flask import flash, jsonify, redirect, render_template, request, session, u
 from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
+# importação do BD, dos Models e segurança necessários
 from app.database import db
 from app.models.like import Like
 from app.models.post import Post
 from app.models.user import User
 from app.security import csrf_protect
 
+# configurações de upload de arquivos permitidos
 EXTENSOES_IMAGEM = {"png", "jpg", "jpeg", "gif"}
 EXTENSOES_VIDEO = {"mp4", "webm", "ogg"}
+
+# assinaturas em bytes (magic numbers) para cada tipo de arquivo
+# isso previne que arquivos maliciosos renomeados sejam aceitos
 ASSINATURAS_PERMITIDAS = {
     "png": [b"\x89PNG\r\n\x1a\n"],
     "jpg": [b"\xff\xd8\xff"],
@@ -25,11 +30,13 @@ ASSINATURAS_PERMITIDAS = {
 
 
 def limpar_texto(valor, limite):
+    # limpa o texto removendo espaços extras e corta no limite do banco de dados
     valor = (valor or "").strip()
     return valor[:limite]
 
 
 def pegar_extensao(nome_arquivo):
+    # extrai a extensão do arquivo (.png, .gif...)
     if "." not in nome_arquivo:
         return ""
 
@@ -37,6 +44,7 @@ def pegar_extensao(nome_arquivo):
 
 
 def verificar_tipo_arquivo(nome_arquivo):
+    # verifica se a extensão do arquivo está na lista de imagens ou vídeos permitidos
     extensao = pegar_extensao(nome_arquivo)
 
     if extensao in EXTENSOES_IMAGEM:
@@ -49,8 +57,9 @@ def verificar_tipo_arquivo(nome_arquivo):
 
 
 def assinatura_valida(arquivo, extensao):
+    # lê os primeiros 16 bytes do arquivo e compara com a assinatura real para evitar fraudes
     inicio = arquivo.stream.read(16)
-    arquivo.stream.seek(0)
+    arquivo.stream.seek(0) # retorna o cursor pro início pra não estragar o salvamento depois
 
     assinaturas = ASSINATURAS_PERMITIDAS.get(extensao, [])
 
@@ -61,10 +70,11 @@ def assinatura_valida(arquivo, extensao):
 
 
 def obter_identificador_like():
+    # identificador único para quem está curtindo
     usuario_id = session.get("usuario_id")
 
     if usuario_id:
-        return f"user:{usuario_id}"
+        return f"user:{usuario_id}" # usa o id do usuário se estiver logado
 
     session_id = session.get("like_session_id")
 
@@ -76,6 +86,7 @@ def obter_identificador_like():
 
 
 def quer_resposta_json():
+    # verifica se a requisição veio do javascript (fetch) para não recarregar a tela inteira
     return (
         request.headers.get("X-Requested-With") == "fetch"
         or request.accept_mimetypes.best == "application/json"
@@ -83,11 +94,14 @@ def quer_resposta_json():
 
 
 def total_likes_post(post_id):
+    # conta o total de curtidas de um post específico no banco
     return Like.query.filter_by(post_id=post_id).count()
 
 
+# CONTROLLER da Lógica de criar nova publicação
 @csrf_protect
 def publicar():
+    # 1. verifica se existe um usuário logado na sessão atual
     usuario_id = session.get("usuario_id")
 
     if not usuario_id:
@@ -101,9 +115,11 @@ def publicar():
         flash("Sessao expirada. Faca login novamente.", "erro")
         return redirect(url_for("login"))
 
+    # 2. se for um acesso normal (GET), renderiza a tela do formulário
     if request.method == "GET":
         return render_template("create_post.html")
 
+    # 3. recebe os dados do formulário e limpa os textos
     titulo = limpar_texto(request.form.get("titulo"), 120)
     descricao = limpar_texto(request.form.get("descricao"), 1000)
     arquivo = request.files.get("arquivo")
@@ -116,6 +132,7 @@ def publicar():
         flash("Nenhum arquivo foi selecionado.", "erro")
         return redirect(url_for("publicar"))
 
+    # 4. checagem de segurança do arquivo enviado
     extensao = pegar_extensao(arquivo.filename)
     tipo = verificar_tipo_arquivo(arquivo.filename)
 
@@ -127,9 +144,12 @@ def publicar():
         flash("O conteudo do arquivo nao confere com o formato informado.", "erro")
         return redirect(url_for("publicar"))
 
+    # 5. prepara o nome seguro para salvar no servidor
+    # secure_filename remove caracteres que hackers usam pra invadir pastas
     nome_seguro = secure_filename(arquivo.filename)
-    nome_final = f"{secrets.token_hex(16)}_{nome_seguro}"
+    nome_final = f"{secrets.token_hex(16)}_{nome_seguro}" # adiciona um código aleatório para não sobrescrever arquivos
 
+    # 6. define a pasta correta baseada no tipo de arquivo e cria ela se não existir
     if tipo == "imagem":
         pasta_upload = os.path.abspath("app/static/uploads/images")
     else:
@@ -137,9 +157,11 @@ def publicar():
 
     os.makedirs(pasta_upload, exist_ok=True)
 
+    # salva fisicamente o arquivo no computador/servidor
     caminho_arquivo = os.path.join(pasta_upload, nome_final)
     arquivo.save(caminho_arquivo)
 
+    # 7. cria a publicação no banco de dados e vincula ao usuário logado
     novo_post = Post(
         usuario_id=usuario.id,
         usuario_nome=usuario.nome,
@@ -156,8 +178,10 @@ def publicar():
     return redirect(url_for("home"))
 
 
+# CONTROLLER da Lógica de curtir ou descurtir uma publicação
 @csrf_protect
 def like_post(post_id):
+    # 1. busca se a publicação existe no banco de dados
     post = db.session.get(Post, post_id)
 
     if post is None:
@@ -167,6 +191,7 @@ def like_post(post_id):
         flash("Publicacao nao encontrada.", "erro")
         return redirect(url_for("home"))
 
+    # 2. verifica se o usuário está logado
     usuario_id = session.get("usuario_id")
 
     if not usuario_id:
@@ -201,6 +226,7 @@ def like_post(post_id):
         flash("Sessao expirada. Faca login novamente.", "erro")
         return redirect(url_for("login"))
 
+    # 3. identifica quem é o usuário dando o like e busca se ele já curtiu
     session_id = obter_identificador_like()
 
     like_existente = Like.query.filter_by(
@@ -208,6 +234,7 @@ def like_post(post_id):
         session_id=session_id,
     ).first()
 
+    # 4. sistema liga/desliga: se já existe a curtida, ele apaga do banco
     if like_existente:
         db.session.delete(like_existente)
         db.session.commit()
@@ -216,7 +243,7 @@ def like_post(post_id):
             return jsonify(
                 {
                     "ok": True,
-                    "liked": False,
+                    "liked": False, # avisa pro javascript desligar a cor do botão
                     "likes": total_likes_post(post.id),
                 }
             )
@@ -224,11 +251,13 @@ def like_post(post_id):
         flash("Curtida removida.", "sucesso")
         return redirect(url_for("home"))
 
+    # 5. se não existia, salva a nova curtida no banco
     db.session.add(Like(post_id=post.id, session_id=session_id))
 
     try:
         db.session.commit()
     except IntegrityError:
+        # proteção extra: se o usuário clicar 2x muito rápido o banco impede erro de duplicação
         db.session.rollback()
         like_existente = Like.query.filter_by(
             post_id=post.id,
@@ -251,11 +280,12 @@ def like_post(post_id):
         flash("Curtida removida.", "sucesso")
         return redirect(url_for("home"))
 
+    # 6. envia as informações de sucesso de volta para o usuário
     if quer_resposta_json():
         return jsonify(
             {
                 "ok": True,
-                "liked": True,
+                "liked": True, # avisa pro javascript ligar a cor do botão
                 "likes": total_likes_post(post.id),
             }
         )
