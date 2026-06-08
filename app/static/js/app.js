@@ -128,12 +128,12 @@ function prepararCurtidas() {
   });
 }
 
-// Sistema de otimização pesada de performance para não travar o dispositivo do usuário
+// otimização  de performance para não travar o dispositivo do usuário
 function prepararMidiasVisiveis() {
   const videos = document.querySelectorAll("[data-watch-video]");
   const gifs = document.querySelectorAll("[data-gif-src]");
 
-  // Fallback: se for um navegador muito antigo, carrega tudo de uma vez
+  // (fallback) se for um navegador muito antigo, carrega tudo de uma vez
   if (!("IntersectionObserver" in window)) {
     gifs.forEach((gif) => {
       gif.src = gif.dataset.gifSrc;
@@ -141,20 +141,20 @@ function prepararMidiasVisiveis() {
     return;
   }
 
-  // O "IntersectionObserver" é um radar nativo que vigia quando um elemento entra na tela
+  // "IntersectionObserver" vigia elementos que entram na tela
   const observadorVideo = new IntersectionObserver(
     (entradas) => {
       entradas.forEach((entrada) => {
         const video = entrada.target;
 
         if (entrada.isIntersecting) {
-          video.play().catch(() => {}); // Dá play automático se entrou na tela
+          video.play().catch(() => {}); // roda vídeo automaticamente se entrou na tela
         } else {
-          video.pause(); // Pausa para economizar bateria se rolou para longe
+          video.pause(); // pausa pro vídeo quando sai da tela
         }
       });
     },
-    { threshold: 0.55 } // Só engatilha quando 55% do vídeo estiver visível
+    { threshold: 0.55 } // funciona quando 55% do vídeo estiver na tela
   );
 
   const observadorGif = new IntersectionObserver(
@@ -163,21 +163,20 @@ function prepararMidiasVisiveis() {
         const gif = entrada.target;
 
         if (entrada.isIntersecting) {
-          gif.src = gif.dataset.gifSrc; // Baixa o GIF quando chega perto da tela
+          gif.src = gif.dataset.gifSrc; // baixa o GIF quando chega perto da tela
         } else {
-          // Substitui o GIF por um pixel transparente quando sai da tela para liberar Memória RAM
+          // substitui o GIF por um pixel transparente quando sai da tela para liberar RAM
           gif.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
         }
       });
     },
-    { rootMargin: "120px 0px", threshold: 0.2 } // Começa a carregar 120px antes de aparecer pro usuário não perceber o delay
+    { rootMargin: "120px 0px", threshold: 0.2 } // começa a carregar 120px antes de aparecer pra esconder o delay
   );
 
   videos.forEach((video) => observadorVideo.observe(video));
   gifs.forEach((gif) => observadorGif.observe(gif));
 }
 
-// Só roda essas preparações depois que todo o HTML já foi desenhado pelo navegador
 document.addEventListener("DOMContentLoaded", () => {
   prepararAlertas();
   prepararDescricoes();
